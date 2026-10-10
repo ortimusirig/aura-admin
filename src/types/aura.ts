@@ -43,6 +43,11 @@ export interface AdminLinksParseResult {
 
 export type BrandFile = 'favicon.ico' | 'apple-touch-icon.png' | 'logo.svg' | 'manifest.json';
 
+/** Where the production server serves a published static file from. */
+export type StaticFileChoice =
+  | { source: 'brand'; path: string; headers: Readonly<Record<string, string>> }
+  | { source: 'public' };
+
 /** Site settings that reach the client at runtime (never at build time). */
 export interface AuraSettings {
   brand: string;

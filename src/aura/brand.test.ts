@@ -1,10 +1,12 @@
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   BRAND_FILES,
+  BRAND_FILE_HEADERS,
   DEFAULT_BRAND_DIR,
   DEFAULT_BRAND_NAME,
   applyBrand,
   brandOverlayPath,
+  pickStaticFile,
   resolveBrandDir,
   resolveBrandName,
 } from './brand';
@@ -63,6 +65,44 @@ describe('brand overlay resolution', () => {
     '',
   ])('rejects traversal or nested path %s', (file) => {
     expect(brandOverlayPath('/brand', file)).toBeUndefined();
+  });
+});
+
+describe('pickStaticFile', () => {
+  const present = (paths: string[]) => async (path: string) => paths.includes(path);
+
+  it('serves an allowlisted file from the brand folder when it is there', async () => {
+    await expect(pickStaticFile('/brand', 'logo.svg', present(['/brand/logo.svg']))).resolves.toEqual({
+      source: 'brand',
+      path: '/brand/logo.svg',
+      headers: BRAND_FILE_HEADERS,
+    });
+  });
+
+  it('falls back to the public file when the brand folder lacks it', async () => {
+    await expect(pickStaticFile('/brand', 'favicon.ico', present(['/brand/logo.svg']))).resolves.toEqual({
+      source: 'public',
+    });
+  });
+
+  it.each(['index.html', 'assets/app.js', '../favicon.ico', 'sub/logo.svg', 'LICENSE.txt'])(
+    'never looks in the brand folder for %s',
+    async (file) => {
+      const exists = vi.fn(async () => true);
+      await expect(pickStaticFile('/brand', file, exists)).resolves.toEqual({ source: 'public' });
+      expect(exists).not.toHaveBeenCalled();
+    },
+  );
+});
+
+describe('brand file headers', () => {
+  it('keep a short cache, forbid sniffing and sandbox the file without script', () => {
+    expect(BRAND_FILE_HEADERS['Cache-Control']).toBe('public, max-age=300');
+    expect(BRAND_FILE_HEADERS['X-Content-Type-Options']).toBe('nosniff');
+    const policy = BRAND_FILE_HEADERS['Content-Security-Policy'].split('; ');
+    expect(policy).toContain("default-src 'none'");
+    expect(policy).toContain('sandbox');
+    expect(policy.some((directive) => directive.startsWith('script-src'))).toBe(false);
   });
 });
 

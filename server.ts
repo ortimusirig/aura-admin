@@ -2,7 +2,7 @@
 import { Glob } from 'bun';
 import type { BunFile } from 'bun';
 import { join } from 'node:path';
-import { brandOverlayPath, resolveBrandDir } from './src/aura/brand';
+import { pickStaticFile, resolveBrandDir } from './src/aura/brand';
 import { cspFrameSrc } from './src/aura/links';
 import {
   metricsResponse,
@@ -54,7 +54,6 @@ const LONG_CACHE: Record<string, string> = {
 const NEVER_CACHE = new Set(['manifest.json', 'sw.js', 'robots.txt']);
 
 const BRAND_DIR = resolveBrandDir(env.AURA_BRAND_DIR);
-const BRAND_CACHE: Record<string, string> = { 'Cache-Control': 'public, max-age=300' };
 
 function getCacheHeaders(filePath: string): Record<string, string> {
   const fileName = filePath.split('/').pop() ?? '';
@@ -65,9 +64,8 @@ function getCacheHeaders(filePath: string): Record<string, string> {
 
 /** A file in AURA_BRAND_DIR replaces the same-named public file (allowlisted names only). */
 async function resolveStaticFile(path: string): Promise<{ file: BunFile; cache: Record<string, string> }> {
-  const overlay = brandOverlayPath(BRAND_DIR, path);
-  const brandFile = overlay ? Bun.file(overlay) : undefined;
-  if (brandFile && (await brandFile.exists())) return { file: brandFile, cache: BRAND_CACHE };
+  const choice = await pickStaticFile(BRAND_DIR, path, (file) => Bun.file(file).exists());
+  if (choice.source === 'brand') return { file: Bun.file(choice.path), cache: { ...choice.headers } };
   return { file: Bun.file(`${CLIENT_DIR}/${path}`), cache: getCacheHeaders(path) };
 }
 
