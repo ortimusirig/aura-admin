@@ -74,6 +74,24 @@ export interface EmbedProps {
   id: string;
 }
 
+/** Claims of an AURA tool pass, version 1, in the key order of the pass contract. */
+export interface ToolPassClaims {
+  v: 1;
+  sub: string;
+  aud: string;
+  iat: number;
+  exp: number;
+  jti: string;
+}
+
+/** What the iframe src of one admin link depends on; `now` (ms) and `jti` are fixed only in tests. */
+export interface FrameSrcInput {
+  secret: string | undefined;
+  email: string | undefined;
+  now?: number;
+  jti?: string;
+}
+
 export interface ShellProps {
   children: ReactNode;
 }
