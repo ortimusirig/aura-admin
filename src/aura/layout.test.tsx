@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-router';
 import type { CSSProperties, ReactNode } from 'react';
 import type * as t from '@/types';
+import { Route as CallbackRoute } from '@/routes/auth/openid/callback';
 import { Route as ToolRoute } from '@/routes/_app/tools/$id';
 import { HelpPage } from '@/components/help/HelpPage';
 import { Route as RootRoute } from '@/routes/__root';
@@ -112,11 +113,18 @@ function stubMatchMedia() {
   });
 }
 
-/** Mounts the real root, login, `_app`, help and tools route components at `url`. */
-function renderAt(url: string) {
+type HeadContext = Parameters<NonNullable<typeof RootRoute.options.head>>[0];
+
+/**
+ * Mounts the real root, login, OAuth callback, `_app`, help and tools route components at
+ * `url`, with the real root error and not-found pages. `rootLoader` replaces the settings loader.
+ */
+function renderAt(url: string, rootLoader: () => Promise<t.AuraSettings> = loadSettings) {
   const rootRoute = createRootRoute({
     component: RootRoute.options.component,
-    loader: loadSettings,
+    errorComponent: RootRoute.options.errorComponent,
+    notFoundComponent: RootRoute.options.notFoundComponent,
+    loader: rootLoader,
   });
   const loginRoute = createRoute({
     getParentRoute: () => rootRoute,
@@ -125,11 +133,18 @@ function renderAt(url: string) {
     loader: () => ({ ssoAvailable: false, ssoOnly: false }),
     component: LoginRoute.options.component,
   });
+  const callbackRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/auth/openid/callback',
+    loader: () => ({ error: 'invalid_code' as const }),
+    component: CallbackRoute.options.component,
+  });
   const appRoute = createRoute({
     getParentRoute: () => rootRoute,
     id: '_app',
     beforeLoad: () => ({ user: USER }),
     component: AppRoute.options.component,
+    notFoundComponent: AppRoute.options.notFoundComponent,
   });
   const helpRoute = createRoute({
     getParentRoute: () => appRoute,
@@ -142,7 +157,11 @@ function renderAt(url: string) {
     component: ToolRoute.options.component,
   });
   const router = createRouter({
-    routeTree: rootRoute.addChildren([loginRoute, appRoute.addChildren([helpRoute, toolRoute])]),
+    routeTree: rootRoute.addChildren([
+      loginRoute,
+      callbackRoute,
+      appRoute.addChildren([helpRoute, toolRoute]),
+    ]),
     history: createMemoryHistory({ initialEntries: [url] }),
   });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -230,6 +249,72 @@ describe('legal footer', () => {
     renderAt('/login');
 
     expect(await findFooter()).toHaveTextContent(/^Admin Panel is based on LibreChat Admin Panel/);
+  });
+});
+
+describe('legal footer on every kind of page', () => {
+  it('renders once on the not-found page', async () => {
+    renderAt('/does-not-exist');
+
+    expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
+    expect(screen.getByText('404')).toBeInTheDocument();
+    expect(screen.getAllByRole('contentinfo')).toHaveLength(1);
+  });
+
+  it('renders once when access is denied', async () => {
+    server.getEffectiveCapabilitiesFn.mockResolvedValue({ capabilities: [] });
+    renderAt('/help');
+
+    expect(await screen.findByRole('heading', { name: 'Access denied' })).toBeInTheDocument();
+    expect(screen.queryByRole('complementary')).toBeNull();
+    expect(screen.getAllByRole('contentinfo')).toHaveLength(1);
+  });
+
+  it('renders once on the root error page', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    renderAt('/login', () => Promise.reject(new Error('root failed')));
+
+    expect(await screen.findByRole('heading', { name: 'Something went wrong' })).toBeInTheDocument();
+    expect(screen.getAllByRole('contentinfo')).toHaveLength(1);
+    consoleError.mockRestore();
+    consoleWarn.mockRestore();
+  });
+
+  it('renders once on the OAuth callback error page', async () => {
+    renderAt('/auth/openid/callback');
+
+    expect(await screen.findByRole('heading', { name: 'Authentication failed' })).toBeInTheDocument();
+    expect(screen.getAllByRole('contentinfo')).toHaveLength(1);
+    expect(within(screen.getByRole('contentinfo')).getByRole('link', { name: newTab('Source') })).toHaveAttribute(
+      'href',
+      `${SOURCE_PREFIX}aura`,
+    );
+  });
+});
+
+describe('document head', () => {
+  async function headFor(loaderData: t.AuraSettings | undefined) {
+    const context: Partial<HeadContext> = { loaderData };
+    return RootRoute.options.head?.(context as HeadContext);
+  }
+
+  it('names the document after the runtime brand and links the overlayable icons', async () => {
+    const head = await headFor({ brand: 'Acme Console', linksTitle: 'Tools' });
+
+    expect(head?.meta).toContainEqual({ title: 'Acme Console' });
+    expect(head?.links).toEqual(
+      expect.arrayContaining([
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        { rel: 'manifest', href: '/manifest.json' },
+      ]),
+    );
+  });
+
+  it('uses the neutral name before the settings load', async () => {
+    const head = await headFor(undefined);
+
+    expect(head?.meta).toContainEqual({ title: DEFAULT_BRAND_NAME });
   });
 });
 
