@@ -101,8 +101,31 @@ describe('parseAdminLinks', () => {
     ['a data: href', { id: 'm', label: 'M', href: 'data:text/html,hi' }],
     ['plain http to another host', { id: 'm', label: 'M', href: 'http://example.com/' }],
     ['a protocol-relative href', { id: 'm', label: 'M', href: '//evil.example/' }],
+    ['an audience with capitals', { id: 'm', label: 'M', href: '/m', mode: 'embed', audience: 'Console' }],
+    ['an audience with a dot', { id: 'm', label: 'M', href: '/m', mode: 'embed', audience: 'con.sole' }],
+    ['an empty audience', { id: 'm', label: 'M', href: '/m', mode: 'embed', audience: '' }],
+    ['an audience longer than 32 characters', { id: 'm', label: 'M', href: '/m', mode: 'embed', audience: 'a'.repeat(33) }],
+    ['a non-string audience', { id: 'm', label: 'M', href: '/m', mode: 'embed', audience: 1 }],
   ])('drops %s', (_name, entry) => {
     expect(parse([entry])).toEqual({ links: [], dropped: [0] });
+  });
+
+  it('keeps a valid audience and omits a missing one', () => {
+    const { links } = parse([
+      { id: 'console', label: 'Console', href: '/console/', mode: 'embed', audience: 'console' },
+      { id: 'reports', label: 'Reports', href: '/reports/', mode: 'embed', audience: 'reports-2' },
+      { id: 'plain', label: 'Plain', href: '/plain/', mode: 'embed', audience: null },
+    ]);
+    expect(links).toEqual([
+      { id: 'console', label: 'Console', href: '/console/', mode: 'embed', icon: DEFAULT_LINK_ICON, audience: 'console' },
+      { id: 'reports', label: 'Reports', href: '/reports/', mode: 'embed', icon: DEFAULT_LINK_ICON, audience: 'reports-2' },
+      { id: 'plain', label: 'Plain', href: '/plain/', mode: 'embed', icon: DEFAULT_LINK_ICON },
+    ]);
+  });
+
+  it('ignores the audience of text entries, like their href', () => {
+    const { links } = parse([{ id: 'rota', label: 'On call', mode: 'text', audience: 'Not Valid' }]);
+    expect(links).toEqual([{ id: 'rota', label: 'On call', mode: 'text', icon: DEFAULT_LINK_ICON }]);
   });
 
   it('drops non-object entries one by one and keeps the valid ones', () => {

@@ -18,6 +18,8 @@ export interface AdminTextLink extends AdminLinkBase {
 export interface AdminUrlLink extends AdminLinkBase {
   mode: 'embed' | 'tab';
   href: string;
+  /** `aud` of the tool pass a same-origin embed receives; the pass default applies when absent. */
+  audience?: string;
 }
 
 export type AdminLink = AdminTextLink | AdminUrlLink;
@@ -30,6 +32,7 @@ export interface RawAdminLink {
   mode?: unknown;
   icon?: unknown;
   note?: unknown;
+  audience?: unknown;
 }
 
 export type AdminLinksError = 'invalid-json' | 'not-an-array';

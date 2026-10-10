@@ -8,7 +8,7 @@ const MAX_LABEL_LENGTH = 40;
 const MAX_NOTE_LENGTH = 80;
 const MAX_TITLE_LENGTH = 40;
 const MAX_HREF_LENGTH = 2048;
-const ID_PATTERN = /^[a-z0-9-]{1,32}$/;
+const SLUG_PATTERN = /^[a-z0-9-]{1,32}$/;
 const UNSAFE_HREF_CHARS = /[\s\\\x00-\x1f\x7f]/;
 const HOSTNAME_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/;
 const IPV6_HOST_PATTERN = /^\[[0-9a-f:.]+\]$/;
@@ -89,8 +89,9 @@ function isRawLink(value: unknown): value is t.RawAdminLink {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function readId(value: unknown): string | undefined {
-  return typeof value === 'string' && ID_PATTERN.test(value) ? value : undefined;
+/** Ids and pass audiences: a-z, 0-9 and dashes, 1 to 32 characters. */
+function readSlug(value: unknown): string | undefined {
+  return typeof value === 'string' && SLUG_PATTERN.test(value) ? value : undefined;
 }
 
 function readLabel(value: unknown): string | undefined {
@@ -108,6 +109,12 @@ function readMode(value: unknown): t.AdminLinkMode | undefined {
 function readIcon(value: unknown): t.IconName {
   if (typeof value !== 'string') return DEFAULT_LINK_ICON;
   return ICON_LOOKUP.get(value) ?? DEFAULT_LINK_ICON;
+}
+
+/** Returns the audience, `''` when absent, or `undefined` when present but invalid. */
+function readAudience(value: unknown): string | undefined {
+  if (value === undefined || value === null) return '';
+  return readSlug(value);
 }
 
 /** Returns the trimmed note, `''` when absent, or `undefined` when present but invalid. */
@@ -152,7 +159,7 @@ export function normalizeHref(value: unknown): string | undefined {
 function toAdminLink(entry: unknown): t.AdminLink | undefined {
   if (!isRawLink(entry)) return undefined;
 
-  const id = readId(entry.id);
+  const id = readSlug(entry.id);
   const label = readLabel(entry.label);
   const mode = readMode(entry.mode);
   const note = readNote(entry.note);
@@ -162,7 +169,9 @@ function toAdminLink(entry: unknown): t.AdminLink | undefined {
   if (mode === 'text') return { ...base, mode };
 
   const href = normalizeHref(entry.href);
-  return href ? { ...base, mode, href } : undefined;
+  const audience = readAudience(entry.audience);
+  if (!href || audience === undefined) return undefined;
+  return { ...base, mode, href, ...(audience ? { audience } : {}) };
 }
 
 function parseJson(raw: string): unknown {
