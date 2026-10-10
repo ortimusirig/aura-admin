@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { QueryClient } from '@tanstack/react-query';
 
 const verifyAdminTokenMock = vi.fn();
 
@@ -16,7 +17,7 @@ vi.mock('./auth', () => ({
   verifyAdminTokenFn: () => verifyAdminTokenMock(),
 }));
 
-import { getAdminLinksFn, getAuraSettingsFn } from './aura';
+import { adminLinksOptions, getAdminLinksFn, getAuraSettingsFn } from './aura';
 
 const LINKS = [
   { id: 'metrics', label: 'Metrics', href: 'https://metrics.example.com/', mode: 'embed', icon: 'metrics' },
@@ -111,5 +112,37 @@ describe('getAuraSettingsFn', () => {
       brand: 'Acme Console',
       linksTitle: 'Operations',
     });
+  });
+});
+
+describe('adminLinksOptions', () => {
+  const SIGNED_OUT = { valid: false, error: 'Session expired due to inactivity' };
+  const SIGNED_IN = { valid: true, user: { id: 'user-1' } };
+
+  it('fetches again after an empty result, so links return after sign-in', async () => {
+    vi.stubEnv('AURA_ADMIN_LINKS', JSON.stringify(LINKS));
+    const client = new QueryClient();
+
+    verifyAdminTokenMock.mockResolvedValue(SIGNED_OUT);
+    await expect(client.fetchQuery(adminLinksOptions)).resolves.toEqual([]);
+
+    verifyAdminTokenMock.mockResolvedValue(SIGNED_IN);
+    const links = await client.fetchQuery(adminLinksOptions);
+    expect(links.map((link) => link.id)).toEqual(['metrics', 'rota']);
+    expect(verifyAdminTokenMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps a non-empty list fresh without another session check', async () => {
+    vi.stubEnv('AURA_ADMIN_LINKS', JSON.stringify(LINKS));
+    const client = new QueryClient();
+    verifyAdminTokenMock.mockResolvedValue(SIGNED_IN);
+
+    await client.fetchQuery(adminLinksOptions);
+    await client.fetchQuery(adminLinksOptions);
+    expect(verifyAdminTokenMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not refetch when the window regains focus', () => {
+    expect(adminLinksOptions.refetchOnWindowFocus).toBe(false);
   });
 });

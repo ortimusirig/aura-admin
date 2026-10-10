@@ -5,6 +5,8 @@ import { parseAdminLinks, resolveLinksTitle } from '@/aura/links';
 import { resolveBrandName } from '@/aura/brand';
 import { verifyAdminTokenFn } from './auth';
 
+const LINKS_STALE_TIME = 5 * 60_000;
+
 let linksCache: { raw: string; links: t.AdminLink[] } | undefined;
 
 /**
@@ -42,8 +44,14 @@ export const getAdminLinksFn = createServerFn({ method: 'GET' }).handler(
   },
 );
 
+/**
+ * An empty list (fetched before sign-in or after the session ended) is never fresh, so the
+ * links come back as soon as the sidebar mounts after sign-in. No refetch on window focus:
+ * that would run a session check outside navigation and could cache an empty list.
+ */
 export const adminLinksOptions = queryOptions({
   queryKey: ['auraAdminLinks'],
   queryFn: () => getAdminLinksFn(),
-  staleTime: 5 * 60_000,
+  staleTime: (query) => (query.state.data?.length ? LINKS_STALE_TIME : 0),
+  refetchOnWindowFocus: false,
 });
