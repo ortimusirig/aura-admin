@@ -1,5 +1,8 @@
+// Modified by Applexus Technologies, 2026-10-10: brand overlay for public files (AGPL-3.0)
 import { Glob } from 'bun';
+import type { BunFile } from 'bun';
 import { join } from 'node:path';
+import { brandOverlayPath, resolveBrandDir } from './src/aura/brand';
 import {
   metricsResponse,
   httpRequestsTotal,
@@ -49,11 +52,22 @@ const LONG_CACHE: Record<string, string> = {
 
 const NEVER_CACHE = new Set(['manifest.json', 'sw.js', 'robots.txt']);
 
+const BRAND_DIR = resolveBrandDir(env.AURA_BRAND_DIR);
+const BRAND_CACHE: Record<string, string> = { 'Cache-Control': 'public, max-age=300' };
+
 function getCacheHeaders(filePath: string): Record<string, string> {
   const fileName = filePath.split('/').pop() ?? '';
   if (NEVER_CACHE.has(fileName)) return NO_CACHE;
   if (filePath.startsWith('assets/')) return LONG_CACHE;
   return {};
+}
+
+/** A file in AURA_BRAND_DIR replaces the same-named public file (allowlisted names only). */
+async function resolveStaticFile(path: string): Promise<{ file: BunFile; cache: Record<string, string> }> {
+  const overlay = brandOverlayPath(BRAND_DIR, path);
+  const brandFile = overlay ? Bun.file(overlay) : undefined;
+  if (brandFile && (await brandFile.exists())) return { file: brandFile, cache: BRAND_CACHE };
+  return { file: Bun.file(`${CLIENT_DIR}/${path}`), cache: getCacheHeaders(path) };
 }
 
 // 'unsafe-inline' in style-src is required because Tailwind 4 + click-ui inject inline styles at runtime.
@@ -114,8 +128,7 @@ async function withHttpMetrics(
 async function buildStaticRoutes(): Promise<Record<string, (req: Request) => Promise<Response>>> {
   const routes: Record<string, (req: Request) => Promise<Response>> = {};
   for await (const path of new Glob('**/*').scan(CLIENT_DIR)) {
-    const file = Bun.file(`${CLIENT_DIR}/${path}`);
-    const cache = getCacheHeaders(path);
+    const { file, cache } = await resolveStaticFile(path);
     const routePath = `${BASE_PATH}/${path}`;
     routes[routePath] = (req) =>
       withHttpMetrics(req, routePath, () => {

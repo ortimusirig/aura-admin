@@ -1,3 +1,4 @@
+// Modified by Applexus Technologies, 2026-10-10: static asset example uses the neutral logo (AGPL-3.0)
 import { describe, expect, it } from 'vitest';
 import { normalizeMetricsPath } from './metrics';
 
@@ -15,7 +16,7 @@ describe('normalizeMetricsPath', () => {
     ['/assets/index-abc123.js'],
     ['/favicon.ico'],
     ['/manifest.json'],
-    ['/clickhouse-dark.svg'],
+    ['/logo.svg'],
   ])('buckets static asset %s', (input) => {
     expect(normalizeMetricsPath(input)).toBe('static_asset');
   });

@@ -1,3 +1,4 @@
+// Modified by Applexus Technologies, 2026-10-10: runtime brand title and icons (AGPL-3.0)
 import '../locales/i18n';
 import { ClickUIProvider } from '@clickhouse/click-ui';
 import { TanStackDevtools } from '@tanstack/react-devtools';
@@ -14,6 +15,9 @@ import {
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import appCss from '../styles.css?url';
+import { DEFAULT_BRAND_NAME } from '@/aura/brand';
+import { loadSettings } from '@/aura/settings';
+import { publicUrl } from '@/aura/paths';
 import { useLocalize } from '@/hooks';
 
 const themeScript = `(function(){
@@ -26,7 +30,9 @@ const themeScript = `(function(){
 
 export const Route = createRootRoute({
   ssr: false,
-  head: () => ({
+  loader: loadSettings,
+  staleTime: Infinity,
+  head: ({ loaderData }) => ({
     meta: [
       {
         charSet: 'utf-8',
@@ -36,7 +42,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'LibreChat Admin Panel',
+        title: loaderData?.brand ?? DEFAULT_BRAND_NAME,
       },
     ],
     links: [
@@ -48,6 +54,8 @@ export const Route = createRootRoute({
         rel: 'icon',
         href: `${(import.meta.env.VITE_BASE_PATH || '').replace(/\/$/, '')}/favicon.ico`,
       },
+      { rel: 'apple-touch-icon', href: publicUrl('apple-touch-icon.png') },
+      { rel: 'manifest', href: publicUrl('manifest.json') },
     ],
   }),
   component: RootComponent,
