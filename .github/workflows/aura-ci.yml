@@ -1,0 +1,65 @@
+# AURA Admin CI (Applexus Technologies, 2026-10-10, AGPL-3.0): the upstream checks for the aura branch.
+name: AURA CI
+
+on:
+  push:
+    branches: [aura]
+  pull_request:
+    branches: [aura]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aura-ci-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: ESLint
+        run: bunx eslint src/ --max-warnings 0
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: TypeScript
+        run: bunx tsc --noEmit
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Vitest (Node)
+        run: node node_modules/vitest/vitest.mjs run
+        env:
+          NODE_ENV: development
+          SESSION_SECRET: ci-test-secret-do-not-use-in-production

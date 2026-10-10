@@ -1,3 +1,4 @@
+# Modified by Applexus Technologies, 2026-10-10: AURA_COMMIT build arg, OCI labels, LICENSE and NOTICE in the image (AGPL-3.0)
 # --- Base ---
 FROM oven/bun:1.3.11-alpine AS base
 WORKDIR /app
@@ -15,6 +16,8 @@ COPY --from=deps /app/node_modules node_modules
 COPY . .
 ARG VITE_BASE_PATH=/
 ENV VITE_BASE_PATH=${VITE_BASE_PATH}
+ARG AURA_COMMIT
+ENV VITE_AURA_COMMIT=${AURA_COMMIT}
 ENV NODE_ENV=production
 RUN bun run build
 
@@ -28,12 +31,18 @@ RUN bun install --frozen-lockfile \
 
 # --- Runtime ---
 FROM base AS runtime
+ARG AURA_COMMIT
+LABEL org.opencontainers.image.title="AURA Admin" \
+      org.opencontainers.image.source="https://github.com/ortimusirig/aura-admin" \
+      org.opencontainers.image.revision="${AURA_COMMIT}" \
+      org.opencontainers.image.licenses="AGPL-3.0"
 ENV NODE_ENV=production
 
 COPY --from=prod-deps /app/node_modules node_modules
 COPY --from=build /app/dist dist
 COPY --from=build /app/src/server src/server
-COPY server.ts package.json ./
+COPY --from=build /app/src/aura src/aura
+COPY server.ts package.json LICENSE NOTICE ./
 
 RUN chown -R bun:bun /app
 USER bun
