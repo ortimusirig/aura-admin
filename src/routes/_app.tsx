@@ -96,7 +96,7 @@ function AppError({ error }: ErrorComponentProps) {
   if (import.meta.env.DEV) console.error(error);
   const localize = useLocalize();
   return (
-    <div role="alert" className="flex min-h-screen items-center justify-center p-6">
+    <div role="alert" className="flex flex-1 items-center justify-center p-6">
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-(--cui-color-background-secondary)">
           <span aria-hidden="true" className="text-(--cui-color-text-danger)">
@@ -121,7 +121,7 @@ function AppError({ error }: ErrorComponentProps) {
 function AppNotFound() {
   const localize = useLocalize();
   return (
-    <div role="alert" className="flex min-h-screen items-center justify-center p-6">
+    <div role="alert" className="flex flex-1 items-center justify-center p-6">
       <div className="flex max-w-sm flex-col items-center gap-4 text-center">
         <span className="text-4xl font-bold text-(--cui-color-text-muted)">404</span>
         <h2 className="text-lg font-semibold text-(--cui-color-title-default)">

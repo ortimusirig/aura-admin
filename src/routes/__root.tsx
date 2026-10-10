@@ -60,7 +60,7 @@ export const Route = createRootRoute({
     ],
   }),
   component: RootComponent,
-  pendingComponent: RootPending,
+  pendingComponent: RootPendingPage,
   shellComponent: RootDocument,
   errorComponent: RootErrorPage,
   notFoundComponent: RootNotFound,
@@ -87,10 +87,18 @@ function ThemedApp() {
   );
 }
 
+function RootPendingPage() {
+  return (
+    <Shell>
+      <RootPending />
+    </Shell>
+  );
+}
+
 function RootPending() {
   const localize = useLocalize();
   return (
-    <div className="flex min-h-screen items-center justify-center bg-(--cui-color-background-default)">
+    <div className="flex flex-1 items-center justify-center bg-(--cui-color-background-default)">
       <div className="animate-pulse text-lg text-(--cui-color-text-muted)">
         {localize('com_ui_loading')}
       </div>
