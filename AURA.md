@@ -28,6 +28,7 @@ you trust.
 [
   { "id": "metrics", "label": "Metrics", "href": "https://metrics.example.com/", "mode": "embed", "icon": "metrics" },
   { "id": "console", "label": "Console", "href": "/console/", "mode": "embed", "icon": "console" },
+  { "id": "reports", "label": "Reports", "href": "/reports/", "mode": "embed", "audience": "reports" },
   { "id": "status", "label": "Status", "href": "https://status.example.com/", "mode": "tab" },
   { "id": "oncall", "label": "On call", "mode": "text", "note": "See the team rota" }
 ]
@@ -45,7 +46,10 @@ you trust.
 - `note`: optional, up to 80 characters.
 - `audience`: optional, a-z, 0-9 and dashes, 1 to 32 characters. The `aud` of the pass a
   same-origin embed receives; default `console`. An invalid value drops the entry; text entries
-  ignore it.
+  ignore it. Give every same-origin embed that is not the console its own audience (like
+  `reports` above): without one it receives a pass the console accepts, so that tool, or anyone
+  who can read its access or proxy logs, could open the console as the admin while the pass is
+  valid.
 
 At most 12 entries are kept. Invalid entries are dropped one by one, and invalid JSON yields an
 empty list. The server log names the problem and the dropped positions, never the value.
