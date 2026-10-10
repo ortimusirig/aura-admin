@@ -87,6 +87,7 @@ const USER = { id: 'user-1', name: 'Ada Admin', email: 'ada@example.com' };
 const SOURCE_PREFIX = 'https://github.com/ortimusirig/aura-admin/tree/';
 const SIDEBAR_KEY = 'admin-panel:sidebar-collapsed';
 const NEW_TAB = '(opens in a new tab)';
+const newTab = (label: string) => new RegExp(String.raw`^${label}\s*\(opens in a new tab\)$`);
 
 const LINKS: t.AdminLink[] = [
   { id: 'metrics', label: 'Metrics', href: 'https://metrics.example.com/d/1', mode: 'embed', icon: 'metrics' },
@@ -181,9 +182,9 @@ describe('legal footer', () => {
       'Acme Console is based on LibreChat Admin Panel, copyright its contributors, modified by Applexus Technologies. AGPL-3.0, no warranty; you may redistribute it under the AGPL.',
     );
     const links = within(footer);
-    expect(links.getByRole('link', { name: `License ${NEW_TAB}` })).toHaveAttribute('href', '/LICENSE.txt');
-    expect(links.getByRole('link', { name: `Notices ${NEW_TAB}` })).toHaveAttribute('href', '/NOTICE.txt');
-    expect(links.getByRole('link', { name: `Source ${NEW_TAB}` })).toHaveAttribute('href', `${SOURCE_PREFIX}aura`);
+    expect(links.getByRole('link', { name: newTab('License') })).toHaveAttribute('href', '/LICENSE.txt');
+    expect(links.getByRole('link', { name: newTab('Notices') })).toHaveAttribute('href', '/NOTICE.txt');
+    expect(links.getByRole('link', { name: newTab('Source') })).toHaveAttribute('href', `${SOURCE_PREFIX}aura`);
     expect(screen.getByRole('heading', { level: 1, name: 'Acme Console' })).toBeInTheDocument();
   });
 
@@ -192,7 +193,7 @@ describe('legal footer', () => {
     renderAt('/help');
 
     const footer = await findFooter();
-    expect(within(footer).getByRole('link', { name: `Source ${NEW_TAB}` })).toHaveAttribute(
+    expect(within(footer).getByRole('link', { name: newTab('Source') })).toHaveAttribute(
       'href',
       `${SOURCE_PREFIX}9f8e7d6c5b4a`,
     );
@@ -204,12 +205,12 @@ describe('legal footer', () => {
     renderAt('/help');
 
     const card = await screen.findByRole('region', { name: 'About and license' });
-    expect(within(card).getByRole('link', { name: `License ${NEW_TAB}` })).toHaveAttribute('href', '/LICENSE.txt');
-    expect(within(card).getByRole('link', { name: `Source ${NEW_TAB}` })).toHaveAttribute(
+    expect(within(card).getByRole('link', { name: newTab('License') })).toHaveAttribute('href', '/LICENSE.txt');
+    expect(within(card).getByRole('link', { name: newTab('Source') })).toHaveAttribute(
       'href',
       `${SOURCE_PREFIX}aura`,
     );
-    expect(within(card).getByRole('link', { name: `Notices ${NEW_TAB}` })).toHaveAttribute('href', '/NOTICE.txt');
+    expect(within(card).getByRole('link', { name: newTab('Notices') })).toHaveAttribute('href', '/NOTICE.txt');
   });
 
   it('has a compact form with the full notice behind a disclosure', async () => {
@@ -245,7 +246,7 @@ describe('sidebar tools section', () => {
     expect(embed).toHaveAttribute('href', '/tools/metrics');
     expect(embed).not.toHaveAttribute('target');
 
-    const tab = section.getByRole('link', { name: `Status ${NEW_TAB}` });
+    const tab = section.getByRole('link', { name: newTab('Status') });
     expect(tab).toHaveAttribute('href', 'https://status.example.com/');
     expect(tab).toHaveAttribute('target', '_blank');
     expect(tab).toHaveAttribute('rel', 'noopener noreferrer');
@@ -268,7 +269,7 @@ describe('sidebar tools section', () => {
     expect(embed).toHaveAttribute('aria-label', 'Metrics');
     expect(embed).toHaveAttribute('title', 'Metrics');
 
-    const tab = section.getByRole('link', { name: `Status ${NEW_TAB}` });
+    const tab = section.getByRole('link', { name: newTab('Status') });
     expect(tab).toHaveAttribute('aria-label', `Status ${NEW_TAB}`);
     expect(tab).toHaveAttribute('title', `Status ${NEW_TAB}`);
 
