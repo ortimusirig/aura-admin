@@ -1,4 +1,4 @@
-// Modified by Applexus Technologies, 2026-10-10: runtime logo (AGPL-3.0)
+// Modified by Applexus Technologies, 2026-10-10: runtime logo, admin tools section (AGPL-3.0)
 import { useState } from 'react';
 import { Icon, Dropdown } from '@clickhouse/click-ui';
 import { Link, useRouter } from '@tanstack/react-router';
@@ -9,6 +9,7 @@ import { SystemCapabilities } from '@/constants';
 import { getInitials, cn } from '@/utils';
 import { adminLogoutFn } from '@/server';
 import { publicUrl } from '@/aura/paths';
+import { Tools } from '@/aura/Tools';
 
 const navItems: t.NavItem[] = [
   { labelKey: 'com_nav_dashboard', path: '/', icon: 'home' },
@@ -119,6 +120,7 @@ export function Sidebar({ user, collapsed, onToggle }: t.SidebarProps) {
               </Link>
             ))}
           </div>
+          <Tools collapsed={collapsed} />
         </nav>
 
         {initials && (

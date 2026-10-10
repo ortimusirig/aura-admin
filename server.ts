@@ -1,8 +1,9 @@
-// Modified by Applexus Technologies, 2026-10-10: brand overlay for public files (AGPL-3.0)
+// Modified by Applexus Technologies, 2026-10-10: brand overlay for public files, frame-src for embedded tools (AGPL-3.0)
 import { Glob } from 'bun';
 import type { BunFile } from 'bun';
 import { join } from 'node:path';
 import { brandOverlayPath, resolveBrandDir } from './src/aura/brand';
+import { cspFrameSrc } from './src/aura/links';
 import {
   metricsResponse,
   httpRequestsTotal,
@@ -84,6 +85,7 @@ const CSP_VALUE = [
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
   "connect-src 'self'",
+  ...cspFrameSrc(env.AURA_ADMIN_LINKS),
   "object-src 'none'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
