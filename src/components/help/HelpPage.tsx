@@ -1,7 +1,7 @@
 // Modified by Applexus Technologies, 2026-10-10: About and license card (AGPL-3.0)
 import { Icon } from '@clickhouse/click-ui';
 import { useLocalize } from '@/hooks';
-import { About } from '@/aura/About';
+import { About } from '@/aura';
 
 const RESOURCES = [
   {

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Embed } from '@/aura/Embed';
+import { Embed } from '@/aura';
 
 export const Route = createFileRoute('/_app/tools/$id')({
   component: ToolRoute,

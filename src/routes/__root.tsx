@@ -15,10 +15,7 @@ import {
 import type { ErrorComponentProps } from '@tanstack/react-router';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import appCss from '../styles.css?url';
-import { DEFAULT_BRAND_NAME } from '@/aura/brand';
-import { loadSettings } from '@/aura/settings';
-import { publicUrl } from '@/aura/paths';
-import { Shell } from '@/aura/Shell';
+import { DEFAULT_BRAND_NAME, Shell, loadSettings, publicUrl } from '@/aura';
 import { useLocalize } from '@/hooks';
 
 const themeScript = `(function(){

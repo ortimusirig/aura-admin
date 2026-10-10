@@ -8,8 +8,7 @@ import { SettingsDialog } from './SettingsDialog';
 import { SystemCapabilities } from '@/constants';
 import { getInitials, cn } from '@/utils';
 import { adminLogoutFn } from '@/server';
-import { publicUrl } from '@/aura/paths';
-import { Tools } from '@/aura/Tools';
+import { Tools, publicUrl } from '@/aura';
 
 const navItems: t.NavItem[] = [
   { labelKey: 'com_nav_dashboard', path: '/', icon: 'home' },
