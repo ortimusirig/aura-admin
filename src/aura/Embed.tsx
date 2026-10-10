@@ -19,9 +19,9 @@ function ToolNotFound() {
       <span aria-hidden="true" className="text-(--cui-color-text-muted)">
         <Icon name="puzzle-piece" size="md" />
       </span>
-      <h2 className="text-lg font-semibold text-(--cui-color-title-default)">
+      <h1 className="text-lg font-semibold text-(--cui-color-title-default)">
         {localize('com_aura_tools_not_found_title')}
-      </h2>
+      </h1>
       <p className="max-w-md text-sm text-(--cui-color-text-muted)">
         {localize('com_aura_tools_not_found_desc')}
       </p>
@@ -42,9 +42,9 @@ export function Embed({ id }: t.EmbedProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-(--cui-color-stroke-default) px-4 py-2">
-        <h2 className="truncate text-sm font-semibold text-(--cui-color-text-default)">
+        <h1 className="truncate text-sm font-semibold text-(--cui-color-text-default)">
           {link.label}
-        </h2>
+        </h1>
         <a
           href={link.href}
           target="_blank"

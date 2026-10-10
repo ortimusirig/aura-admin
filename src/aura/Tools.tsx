@@ -13,8 +13,9 @@ const IDLE_CLASS =
   'font-normal text-(--cui-color-text-muted) hover:bg-(--cui-color-background-hover) hover:text-(--cui-color-text-default)';
 const ACTIVE_CLASS = 'bg-(--cui-color-background-active) font-medium text-(--cui-color-text-default)';
 
-function collapsedLabel(link: t.AdminLink, collapsed: boolean) {
-  return collapsed ? { 'aria-label': link.label, title: link.label } : {};
+/** In the collapsed sidebar only the icon shows, so the name goes to aria-label and title. */
+function collapsedLabel(collapsed: boolean, name: string) {
+  return collapsed ? { 'aria-label': name, title: name } : {};
 }
 
 function LinkIcon({ link }: { link: t.AdminLink }) {
@@ -29,7 +30,7 @@ function TextRow({ link, collapsed }: { link: t.AdminLink; collapsed: boolean })
   return (
     <div
       role="note"
-      {...collapsedLabel(link, collapsed)}
+      {...collapsedLabel(collapsed, link.note ? `${link.label}: ${link.note}` : link.label)}
       className={cn(ROW_CLASS, 'py-1 text-(--cui-color-text-muted)')}
     >
       <LinkIcon link={link} />
@@ -45,17 +46,18 @@ function TextRow({ link, collapsed }: { link: t.AdminLink; collapsed: boolean })
 
 function TabRow({ link, collapsed }: { link: t.AdminUrlLink; collapsed: boolean }) {
   const localize = useLocalize();
+  const hint = `(${localize('com_aura_new_tab_hint')})`;
   return (
     <a
       href={link.href}
       target="_blank"
       rel="noopener noreferrer"
-      {...collapsedLabel(link, collapsed)}
+      {...collapsedLabel(collapsed, `${link.label} ${hint}`)}
       className={cn(ROW_CLASS, IDLE_CLASS)}
     >
       <LinkIcon link={link} />
       <span className="truncate text-sm">{link.label}</span>
-      <span className="sr-only">{`(${localize('com_aura_new_tab_hint')})`}</span>
+      <span className="sr-only">{` ${hint}`}</span>
     </a>
   );
 }
@@ -65,7 +67,7 @@ function EmbedRow({ link, collapsed }: { link: t.AdminUrlLink; collapsed: boolea
     <Link
       to="/tools/$id"
       params={{ id: link.id }}
-      {...collapsedLabel(link, collapsed)}
+      {...collapsedLabel(collapsed, link.label)}
       className={ROW_CLASS}
       activeProps={{ className: ACTIVE_CLASS }}
       inactiveProps={{ className: IDLE_CLASS }}

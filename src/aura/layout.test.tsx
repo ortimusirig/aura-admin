@@ -245,7 +245,7 @@ describe('sidebar tools section', () => {
     expect(embed).toHaveAttribute('href', '/tools/metrics');
     expect(embed).not.toHaveAttribute('target');
 
-    const tab = section.getByRole('link', { name: /^Status/ });
+    const tab = section.getByRole('link', { name: `Status ${NEW_TAB}` });
     expect(tab).toHaveAttribute('href', 'https://status.example.com/');
     expect(tab).toHaveAttribute('target', '_blank');
     expect(tab).toHaveAttribute('rel', 'noopener noreferrer');
@@ -268,12 +268,12 @@ describe('sidebar tools section', () => {
     expect(embed).toHaveAttribute('aria-label', 'Metrics');
     expect(embed).toHaveAttribute('title', 'Metrics');
 
-    const tab = section.getByRole('link', { name: 'Status' });
-    expect(tab).toHaveAttribute('aria-label', 'Status');
-    expect(tab).toHaveAttribute('title', 'Status');
+    const tab = section.getByRole('link', { name: `Status ${NEW_TAB}` });
+    expect(tab).toHaveAttribute('aria-label', `Status ${NEW_TAB}`);
+    expect(tab).toHaveAttribute('title', `Status ${NEW_TAB}`);
 
-    const note = section.getByRole('note', { name: 'On call' });
-    expect(note).toHaveAttribute('title', 'On call');
+    const note = section.getByRole('note', { name: 'On call: See the team rota' });
+    expect(note).toHaveAttribute('title', 'On call: See the team rota');
     expect(note).not.toHaveTextContent('See the team rota');
   });
 
@@ -315,13 +315,13 @@ describe('embedded tool page', () => {
     expect(open).toHaveAttribute('href', 'https://metrics.example.com/d/1');
     expect(open).toHaveAttribute('target', '_blank');
     expect(open).toHaveAttribute('rel', 'noopener noreferrer');
-    expect(screen.getByRole('heading', { level: 2, name: 'Metrics' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Metrics' })).toBeInTheDocument();
   });
 
   it('shows a friendly message for an unknown id', async () => {
     renderAt('/tools/unknown');
 
-    expect(await screen.findByText('Tool not found')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Tool not found' })).toBeInTheDocument();
     expect(document.querySelector('iframe')).toBeNull();
   });
 
