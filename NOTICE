@@ -44,6 +44,13 @@ Based on upstream commit bb88594.
     and the image without publishing them; removed the upstream image
     publishing workflow.
   - Operator notes for the added settings in AURA.md.
+  - Signed one-minute pass for same-origin embedded tools: with
+    AURA_TOOLS_PASS_SECRET set, the panel adds aura_pass=<pass> to the
+    frame address of an embed entry with a same-origin path, for a
+    signed-in admin; admin links accept an optional audience field.
+  - Embedded tools may show confirm and prompt dialogs and leave the frame
+    for the top window on a user click; a "Reload frame" control loads the
+    frame again with a fresh pass.
 
 
 Additional terms (AGPL-3.0 section 7(e))
