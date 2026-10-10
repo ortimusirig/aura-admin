@@ -1,4 +1,6 @@
+// Modified by Applexus Technologies, 2026-10-10: export AURA types (AGPL-3.0)
 export type * from './access';
+export type * from './aura';
 export type * from './auth';
 export type * from './config';
 export type * from './config-ui';
