@@ -156,6 +156,9 @@ describe('normalizeHref', () => {
     ['http://localhost/', 'http://localhost/'],
     ['http://localhost:8080/admin', 'http://localhost:8080/admin'],
     ['http://127.0.0.1:9000/', 'http://127.0.0.1:9000/'],
+    ['https://10.0.0.1/x', 'https://10.0.0.1/x'],
+    ['https://[::1]:8443/', 'https://[::1]:8443/'],
+    ['https://b\u00fccher.example/', 'https://xn--bcher-kva.example/'],
     ['/grafana/', '/grafana/'],
     ['  /padded  ', '/padded'],
   ])('accepts %s', (input, expected) => {
@@ -171,6 +174,15 @@ describe('normalizeHref', () => {
     'http://127.0.0.2/',
     'http://localhost@evil.example/',
     'https://user:secret@tools.example.com/',
+    'https://*/',
+    'https://*.example.com/',
+    'https://a.com;b/',
+    'https://a.com%3Bb/',
+    'https://a.com,b/',
+    "https://a.com'b/",
+    'https://my_host.example.com/',
+    'https://-a.example.com/',
+    'https://example.com./',
     '//evil.example/',
     '/\\evil.example/',
     '/path with spaces',
@@ -199,18 +211,21 @@ describe('resolveLinksTitle', () => {
 });
 
 describe('frame sources for the CSP', () => {
-  it('lists self and each external embed origin once', () => {
+  it('lists self and each kind of embed source once, never a host name', () => {
     const { links } = parse([
       { id: 'a', label: 'A', href: 'https://a.example.com/one', mode: 'embed' },
-      { id: 'b', label: 'B', href: 'https://a.example.com/two', mode: 'embed' },
+      { id: 'b', label: 'B', href: 'https://b.example.com/two', mode: 'embed' },
       { id: 'c', label: 'C', href: 'http://localhost:8080/', mode: 'embed' },
       { id: 'd', label: 'D', href: '/local/', mode: 'embed' },
-      { id: 'e', label: 'E', href: 'https://tab.example.com/', mode: 'tab' },
+      { id: 'e', label: 'E', href: 'http://127.0.0.1/', mode: 'embed' },
+      { id: 'f', label: 'F', href: 'https://tab.example.com/', mode: 'tab' },
     ]);
-    expect(frameSources(links)).toEqual(["'self'", 'https://a.example.com', 'http://localhost:8080']);
+    const sources = frameSources(links);
+    expect(sources).toEqual(["'self'", 'https:', 'http://localhost:*', 'http://127.0.0.1:*']);
+    expect(sources.join(' ')).not.toMatch(/example/);
   });
 
-  it('needs self for same-origin embeds', () => {
+  it('needs only self for same-origin embeds', () => {
     expect(cspFrameSrc(JSON.stringify([{ id: 'd', label: 'D', href: '/x', mode: 'embed' }]))).toEqual([
       "frame-src 'self'",
     ]);
@@ -222,8 +237,19 @@ describe('frame sources for the CSP', () => {
     expect(cspFrameSrc(JSON.stringify([{ id: 't', label: 'T', href: 'https://t.example/' }]))).toEqual([]);
   });
 
-  it('builds the directive from the environment value', () => {
-    const raw = JSON.stringify([{ id: 'm', label: 'M', href: 'https://m.example.com/x', mode: 'embed' }]);
-    expect(cspFrameSrc(raw)).toEqual(["frame-src 'self' https://m.example.com"]);
+  it('builds the directive from the environment value without naming the embedded host', () => {
+    const raw = JSON.stringify([
+      { id: 'm', label: 'M', href: 'https://ops.internal.example:8443/x', mode: 'embed' },
+    ]);
+    expect(cspFrameSrc(raw)).toEqual(["frame-src 'self' https:"]);
+  });
+
+  it('cannot be widened or split by a crafted host', () => {
+    const raw = JSON.stringify([
+      { id: 'w', label: 'W', href: 'https://*/', mode: 'embed' },
+      { id: 's', label: 'S', href: 'https://a.com;script-src/', mode: 'embed' },
+      { id: 'c', label: 'C', href: 'https://a.com,b/', mode: 'embed' },
+    ]);
+    expect(cspFrameSrc(raw)).toEqual([]);
   });
 });

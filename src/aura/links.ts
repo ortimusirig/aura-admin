@@ -10,6 +10,8 @@ const MAX_TITLE_LENGTH = 40;
 const MAX_HREF_LENGTH = 2048;
 const ID_PATTERN = /^[a-z0-9-]{1,32}$/;
 const UNSAFE_HREF_CHARS = /[\s\\\x00-\x1f\x7f]/;
+const HOSTNAME_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/;
+const IPV6_HOST_PATTERN = /^\[[0-9a-f:.]+\]$/;
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1']);
 const LINK_MODES = new Map<string, t.AdminLinkMode>([
   ['embed', 'embed'],
@@ -18,6 +20,7 @@ const LINK_MODES = new Map<string, t.AdminLinkMode>([
 ]);
 const INVALID_JSON = Symbol('invalid-json');
 const SELF_SOURCE = "'self'";
+const HTTPS_SOURCE = 'https:';
 
 /**
  * Icons an admin link may name. Each one is a valid Click UI icon that also passes the
@@ -123,9 +126,15 @@ function parseUrl(value: string): URL | undefined {
   }
 }
 
+/** DNS names (IDN hosts arrive as punycode), IPv4 addresses and bracketed IPv6 literals. */
+function isValidHostname(hostname: string): boolean {
+  return HOSTNAME_PATTERN.test(hostname) || IPV6_HOST_PATTERN.test(hostname);
+}
+
 /**
  * Accepts `https://` URLs, `http://` URLs on localhost or 127.0.0.1, and same-origin
  * paths that start with a single `/`. Returns the normalized href or `undefined`.
+ * Hosts with wildcards or punctuation such as `*`, `;` or `,` are rejected.
  */
 export function normalizeHref(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
@@ -134,7 +143,7 @@ export function normalizeHref(value: unknown): string | undefined {
   if (href.startsWith('/')) return href.startsWith('//') ? undefined : href;
 
   const url = parseUrl(href);
-  if (!url || url.username || url.password || !url.hostname) return undefined;
+  if (!url || url.username || url.password || !isValidHostname(url.hostname)) return undefined;
   if (url.protocol === 'https:') return url.href;
   if (url.protocol === 'http:' && LOOPBACK_HOSTS.has(url.hostname)) return url.href;
   return undefined;
@@ -202,12 +211,22 @@ export function resolveLinksTitle(value: string | undefined): string {
   return title || DEFAULT_LINKS_TITLE;
 }
 
-/** Sources an embedded tool needs in `frame-src`: `'self'` plus each external origin. */
+/** The source kind that admits one embed href: `'self'`, `https:` or a loopback host on any port. */
+function frameSource(href: string): string {
+  if (href.startsWith('/')) return SELF_SOURCE;
+  const { protocol, hostname } = new URL(href);
+  return protocol === 'https:' ? HTTPS_SOURCE : `http://${hostname}:*`;
+}
+
+/**
+ * Sources the embedded tools need in `frame-src`, by kind rather than by origin: the header
+ * goes out on every page, also before sign-in, so it must never name an embedded host.
+ * Always `'self'`, plus `https:` and `http://localhost:*` or `http://127.0.0.1:*` as needed.
+ */
 export function frameSources(links: readonly t.AdminLink[]): string[] {
   const sources = links.reduce<Set<string> | undefined>((acc, link) => {
     if (link.mode !== 'embed') return acc;
-    const next = acc ?? new Set([SELF_SOURCE]);
-    return link.href.startsWith('/') ? next : next.add(new URL(link.href).origin);
+    return (acc ?? new Set([SELF_SOURCE])).add(frameSource(link.href));
   }, undefined);
   return sources ? [...sources] : [];
 }

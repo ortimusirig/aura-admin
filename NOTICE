@@ -30,8 +30,9 @@ Based on upstream commit bb88594.
     added a neutral default logo, favicon and touch icon.
   - Admin tools section in the sidebar, configured by AURA_ADMIN_LINKS and
     AURA_ADMIN_LINKS_TITLE and shown only to signed-in admins; embedded
-    tools open under /tools/<id>, and their origins are added to the
-    frame-src directive of the Content-Security-Policy.
+    tools open under /tools/<id>. The frame-src directive of the
+    Content-Security-Policy admits them by source kind (https:, loopback
+    or same origin), so the header never names an embedded host.
   - Legal notice footer on every page, an "About and license" card on the
     Help page, and this NOTICE file (also served as /NOTICE.txt, with the
     license as /LICENSE.txt).
