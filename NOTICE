@@ -12,7 +12,8 @@ applicable law. You may redistribute it and/or modify it under the terms of
 the AGPL-3.0.
 
 Source code of this fork: https://github.com/ortimusirig/aura-admin
-Each running instance links to the exact source commit it was built from.
+Each running instance links to the source commit it was built from (the
+aura branch when built without AURA_COMMIT).
 
 
 Changes to the upstream program
@@ -39,8 +40,10 @@ Based on upstream commit bb88594.
   - The page layout leaves room for the footer below the content.
   - Docker image: build argument AURA_COMMIT for the source link, OCI
     labels, LICENSE and NOTICE copied into the image.
-  - Continuous integration for the aura branch; removed the upstream image
+  - Continuous integration for the aura branch, which also builds the app
+    and the image without publishing them; removed the upstream image
     publishing workflow.
+  - Operator notes for the added settings in AURA.md.
 
 
 Additional terms (AGPL-3.0 section 7(e))

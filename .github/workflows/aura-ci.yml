@@ -1,4 +1,5 @@
-# AURA Admin CI (Applexus Technologies, 2026-10-10, AGPL-3.0): the upstream checks for the aura branch.
+# AURA Admin CI (Applexus Technologies, 2026-10-10, AGPL-3.0): the upstream checks for the aura branch,
+# plus a build of the app and the image (never pushed) with a smoke test.
 name: AURA CI
 
 on:
@@ -63,3 +64,45 @@ jobs:
         env:
           NODE_ENV: development
           SESSION_SECRET: ci-test-secret-do-not-use-in-production
+
+  build:
+    name: Build and Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Vite build
+        run: bun run build
+
+      - name: Docker build (no push)
+        run: docker build --build-arg AURA_COMMIT=${{ github.sha }} -t aura-admin:ci .
+
+      - name: Image labels
+        run: docker inspect --format '{{ json .Config.Labels }}' aura-admin:ci
+
+      - name: Smoke test
+        run: |
+          mkdir -p "$RUNNER_TEMP/brand"
+          printf '<svg xmlns="http://www.w3.org/2000/svg"/>\n' > "$RUNNER_TEMP/brand/logo.svg"
+          chmod -R a+rX "$RUNNER_TEMP/brand"
+          docker run -d --name aura-admin-ci -p 3000:3000 \
+            -e SESSION_SECRET=ci-smoke-secret-do-not-use-in-production \
+            -v "$RUNNER_TEMP/brand:/brand:ro" aura-admin:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:3000/health && break
+            sleep 2
+          done
+          curl -fsS http://localhost:3000/health
+          curl -fsS -o /dev/null http://localhost:3000/LICENSE.txt
+          curl -fsS -o /dev/null http://localhost:3000/NOTICE.txt
+          curl -fsS -D - -o /dev/null http://localhost:3000/logo.svg \
+            | grep -i "^content-security-policy: default-src 'none'"
+
+      - name: Container log
+        if: always()
+        run: docker logs aura-admin-ci || true
