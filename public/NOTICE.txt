@@ -1,0 +1,65 @@
+AURA Admin
+==========
+
+This program is a modified version of LibreChat Admin Panel
+(https://github.com/LibreChat-AI/admin-panel), copyright its contributors,
+licensed under the GNU Affero General Public License version 3 (AGPL-3.0).
+
+Modifications copyright 2026 Applexus Technologies. The modifications are
+released under the same license, AGPL-3.0; see LICENSE for the full text.
+This program comes with ABSOLUTELY NO WARRANTY, to the extent permitted by
+applicable law. You may redistribute it and/or modify it under the terms of
+the AGPL-3.0.
+
+Source code of this fork: https://github.com/ortimusirig/aura-admin
+Each running instance links to the exact source commit it was built from.
+
+
+Changes to the upstream program
+-------------------------------
+
+Based on upstream commit bb88594.
+
+2026-10-10
+  - Runtime branding: the product name comes from AURA_BRAND_NAME (neutral
+    default "Admin Panel"); favicon.ico, apple-touch-icon.png, logo.svg and
+    manifest.json can be replaced at runtime by files in AURA_BRAND_DIR
+    (default /brand). English strings that named the product use the
+    runtime name.
+  - Removed the LibreChat and ClickHouse logos and the ClickHouse favicon;
+    added a neutral default logo, favicon and touch icon.
+  - Admin tools section in the sidebar, configured by AURA_ADMIN_LINKS and
+    AURA_ADMIN_LINKS_TITLE and shown only to signed-in admins; embedded
+    tools open under /tools/<id>, and their origins are added to the
+    frame-src directive of the Content-Security-Policy.
+  - Legal notice footer on every page, an "About and license" card on the
+    Help page, and this NOTICE file (also served as /NOTICE.txt, with the
+    license as /LICENSE.txt).
+  - The page layout leaves room for the footer below the content.
+  - Docker image: build argument AURA_COMMIT for the source link, OCI
+    labels, LICENSE and NOTICE copied into the image.
+  - Continuous integration for the aura branch; removed the upstream image
+    publishing workflow.
+
+
+Additional terms (AGPL-3.0 section 7(e))
+----------------------------------------
+
+No rights are granted to use any names, logos, trade names, trademarks or
+service marks supplied at runtime through AURA_BRAND_NAME or AURA_BRAND_DIR.
+Those names and files belong to their respective owners and are not part of
+this program.
+
+
+Trademarks
+----------
+
+"LibreChat" and "ClickHouse" may be trademarks of their respective owners.
+This fork is not affiliated with or endorsed by them.
+
+
+Third-party software
+--------------------
+
+Bundled third-party packages keep their own licences; see the licence files
+of the packages in node_modules.

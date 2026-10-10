@@ -1,5 +1,7 @@
+// Modified by Applexus Technologies, 2026-10-10: About and license card (AGPL-3.0)
 import { Icon } from '@clickhouse/click-ui';
 import { useLocalize } from '@/hooks';
+import { About } from '@/aura/About';
 
 const RESOURCES = [
   {
@@ -71,6 +73,8 @@ export function HelpPage() {
           ))}
         </div>
       </section>
+
+      <About />
 
       <section aria-label={localize('com_help_support')}>
         <div className="rounded-lg border border-(--cui-color-stroke-default) bg-(--cui-color-background-muted) px-4 py-3">

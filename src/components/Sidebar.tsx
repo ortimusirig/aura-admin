@@ -1,4 +1,4 @@
-// Modified by Applexus Technologies, 2026-10-10: runtime logo, admin tools section (AGPL-3.0)
+// Modified by Applexus Technologies, 2026-10-10: runtime logo, admin tools section, full-height layout (AGPL-3.0)
 import { useState } from 'react';
 import { Icon, Dropdown } from '@clickhouse/click-ui';
 import { Link, useRouter } from '@tanstack/react-router';
@@ -84,7 +84,7 @@ export function Sidebar({ user, collapsed, onToggle }: t.SidebarProps) {
       <aside
         aria-label={localize('com_a11y_admin_panel')}
         className={cn(
-          'sticky top-0 z-(--z-floating) flex h-screen shrink-0 flex-col overflow-hidden border-r border-(--cui-color-stroke-default) bg-(--cui-color-background-panel) transition-[width] duration-200',
+          'sticky top-0 z-(--z-floating) flex h-full shrink-0 flex-col overflow-hidden border-r border-(--cui-color-stroke-default) bg-(--cui-color-background-panel) transition-[width] duration-200',
           collapsed ? 'w-14' : 'w-63',
         )}
       >

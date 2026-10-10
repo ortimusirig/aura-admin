@@ -1,3 +1,4 @@
+// Modified by Applexus Technologies, 2026-10-10: page fills the root shell above the legal footer (AGPL-3.0)
 import { z } from 'zod';
 import { createFileRoute, redirect, Link } from '@tanstack/react-router';
 import { oauthExchangeFn } from '@/server';
@@ -39,7 +40,7 @@ function OpenIdCallback() {
       : (loaderData.message ?? localize('com_auth_sso_exchange_failed'));
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-(--cui-color-background-default) px-4">
+    <div className="flex flex-1 items-center justify-center bg-(--cui-color-background-default) px-4">
       <div className="flex max-w-md flex-col items-center gap-4 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-(--cui-color-background-secondary)">
           <svg

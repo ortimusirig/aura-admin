@@ -1,4 +1,4 @@
-// Modified by Applexus Technologies, 2026-10-10: runtime brand title and icons (AGPL-3.0)
+// Modified by Applexus Technologies, 2026-10-10: runtime brand title, legal footer shell (AGPL-3.0)
 import '../locales/i18n';
 import { ClickUIProvider } from '@clickhouse/click-ui';
 import { TanStackDevtools } from '@tanstack/react-devtools';
@@ -18,6 +18,7 @@ import appCss from '../styles.css?url';
 import { DEFAULT_BRAND_NAME } from '@/aura/brand';
 import { loadSettings } from '@/aura/settings';
 import { publicUrl } from '@/aura/paths';
+import { Shell } from '@/aura/Shell';
 import { useLocalize } from '@/hooks';
 
 const themeScript = `(function(){
@@ -61,7 +62,7 @@ export const Route = createRootRoute({
   component: RootComponent,
   pendingComponent: RootPending,
   shellComponent: RootDocument,
-  errorComponent: RootError,
+  errorComponent: RootErrorPage,
   notFoundComponent: RootNotFound,
 });
 
@@ -78,7 +79,9 @@ function ThemedApp() {
   return (
     <ClickUIProvider theme={resolvedTheme}>
       <div className="isolate">
-        <Outlet />
+        <Shell>
+          <Outlet />
+        </Shell>
       </div>
     </ClickUIProvider>
   );
@@ -125,13 +128,21 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   );
 }
 
+function RootErrorPage(props: ErrorComponentProps) {
+  return (
+    <Shell>
+      <RootError {...props} />
+    </Shell>
+  );
+}
+
 function RootError({ error }: ErrorComponentProps) {
   if (import.meta.env.DEV) console.error(error);
   const localize = useLocalize();
   return (
     <div
       role="alert"
-      className="flex min-h-screen items-center justify-center bg-(--cui-color-background-default) px-4"
+      className="flex flex-1 items-center justify-center bg-(--cui-color-background-default) px-4"
     >
       <div className="flex max-w-md flex-col items-center gap-4 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-(--cui-color-background-secondary)">
@@ -171,7 +182,7 @@ function RootNotFound() {
   return (
     <div
       role="alert"
-      className="flex min-h-screen items-center justify-center bg-(--cui-color-background-default) px-4"
+      className="flex flex-1 items-center justify-center bg-(--cui-color-background-default) px-4"
     >
       <div className="flex max-w-md flex-col items-center gap-4 text-center">
         <span className="text-5xl font-bold text-(--cui-color-text-muted)">404</span>

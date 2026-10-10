@@ -1,3 +1,4 @@
+// Modified by Applexus Technologies, 2026-10-10: layout fills the root shell above the legal footer (AGPL-3.0)
 import { useState, useEffect } from 'react';
 import { Icon } from '@clickhouse/click-ui';
 import { createFileRoute, Outlet, useRouter, Link, redirect } from '@tanstack/react-router';
@@ -78,7 +79,7 @@ function AppLayout() {
   const title = matchedKey ? localize(ROUTE_TITLE_KEYS[matchedKey]) : undefined;
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex min-h-0 flex-1 overflow-hidden">
       <Sidebar user={user} collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header title={title} onSearchClick={() => setOpen(true)} />

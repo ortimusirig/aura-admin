@@ -1,3 +1,4 @@
+// Modified by Applexus Technologies, 2026-10-10: page fills the root shell above the legal footer (AGPL-3.0)
 import { Container } from '@clickhouse/click-ui';
 import { createFileRoute } from '@tanstack/react-router';
 import ThemeSelector from '@/components/ThemeSelector';
@@ -27,7 +28,7 @@ function LoginPage() {
       orientation="vertical"
       alignItems="center"
       justifyContent="center"
-      style={{ minHeight: '100vh', padding: '1rem', gap: '1rem' }}
+      style={{ flex: '1 0 auto', padding: '1rem', gap: '1rem' }}
     >
       <AuthCard redirectTo={redirect} autoRedirectSso={ssoOnly} ssoAvailable={ssoAvailable} />
       <div className="sm:absolute sm:bottom-0 sm:left-0 sm:m-4">
