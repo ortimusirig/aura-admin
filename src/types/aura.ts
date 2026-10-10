@@ -59,6 +59,10 @@ export interface LegalLink {
   href: string;
 }
 
+export interface LegalLinksProps {
+  linkClassName: string;
+}
+
 export interface ToolsProps {
   collapsed: boolean;
 }

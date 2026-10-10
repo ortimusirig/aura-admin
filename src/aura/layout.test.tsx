@@ -86,6 +86,7 @@ vi.mock('@/components/SettingsDialog', () => ({ SettingsDialog: () => null }));
 const USER = { id: 'user-1', name: 'Ada Admin', email: 'ada@example.com' };
 const SOURCE_PREFIX = 'https://github.com/ortimusirig/aura-admin/tree/';
 const SIDEBAR_KEY = 'admin-panel:sidebar-collapsed';
+const NEW_TAB = '(opens in a new tab)';
 
 const LINKS: t.AdminLink[] = [
   { id: 'metrics', label: 'Metrics', href: 'https://metrics.example.com/d/1', mode: 'embed', icon: 'metrics' },
@@ -180,9 +181,9 @@ describe('legal footer', () => {
       'Acme Console is based on LibreChat Admin Panel, copyright its contributors, modified by Applexus Technologies. AGPL-3.0, no warranty; you may redistribute it under the AGPL.',
     );
     const links = within(footer);
-    expect(links.getByRole('link', { name: 'License' })).toHaveAttribute('href', '/LICENSE.txt');
-    expect(links.getByRole('link', { name: 'Notices' })).toHaveAttribute('href', '/NOTICE.txt');
-    expect(links.getByRole('link', { name: 'Source' })).toHaveAttribute('href', `${SOURCE_PREFIX}aura`);
+    expect(links.getByRole('link', { name: `License ${NEW_TAB}` })).toHaveAttribute('href', '/LICENSE.txt');
+    expect(links.getByRole('link', { name: `Notices ${NEW_TAB}` })).toHaveAttribute('href', '/NOTICE.txt');
+    expect(links.getByRole('link', { name: `Source ${NEW_TAB}` })).toHaveAttribute('href', `${SOURCE_PREFIX}aura`);
     expect(screen.getByRole('heading', { level: 1, name: 'Acme Console' })).toBeInTheDocument();
   });
 
@@ -191,7 +192,7 @@ describe('legal footer', () => {
     renderAt('/help');
 
     const footer = await findFooter();
-    expect(within(footer).getByRole('link', { name: 'Source' })).toHaveAttribute(
+    expect(within(footer).getByRole('link', { name: `Source ${NEW_TAB}` })).toHaveAttribute(
       'href',
       `${SOURCE_PREFIX}9f8e7d6c5b4a`,
     );
@@ -203,12 +204,24 @@ describe('legal footer', () => {
     renderAt('/help');
 
     const card = await screen.findByRole('region', { name: 'About and license' });
-    expect(within(card).getByRole('link', { name: 'License' })).toHaveAttribute('href', '/LICENSE.txt');
-    expect(within(card).getByRole('link', { name: 'Source' })).toHaveAttribute(
+    expect(within(card).getByRole('link', { name: `License ${NEW_TAB}` })).toHaveAttribute('href', '/LICENSE.txt');
+    expect(within(card).getByRole('link', { name: `Source ${NEW_TAB}` })).toHaveAttribute(
       'href',
       `${SOURCE_PREFIX}aura`,
     );
-    expect(within(card).getByRole('link', { name: 'Notices' })).toHaveAttribute('href', '/NOTICE.txt');
+    expect(within(card).getByRole('link', { name: `Notices ${NEW_TAB}` })).toHaveAttribute('href', '/NOTICE.txt');
+  });
+
+  it('has a compact form with the full notice behind a disclosure', async () => {
+    renderAt('/login');
+
+    const footer = await findFooter();
+    const summary = within(footer).getByText('AGPL-3.0, no warranty.');
+    expect(summary.tagName).toBe('SUMMARY');
+    expect(summary.closest('details')).toHaveTextContent(
+      'Acme Console is based on LibreChat Admin Panel, copyright its contributors',
+    );
+    expect(within(footer).getAllByRole('link')).toHaveLength(3);
   });
 
   it('uses the neutral name when the settings cannot be loaded', async () => {

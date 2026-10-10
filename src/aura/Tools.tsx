@@ -55,7 +55,7 @@ function TabRow({ link, collapsed }: { link: t.AdminUrlLink; collapsed: boolean 
     >
       <LinkIcon link={link} />
       <span className="truncate text-sm">{link.label}</span>
-      <span className="sr-only">{`(${localize('com_aura_tools_new_tab_hint')})`}</span>
+      <span className="sr-only">{`(${localize('com_aura_new_tab_hint')})`}</span>
     </a>
   );
 }

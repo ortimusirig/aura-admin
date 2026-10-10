@@ -3,14 +3,15 @@
   "com_a11y_admin_panel": "{{brand}}",
   "com_a11y_logo_alt": "{{brand}} logo",
   "com_aura_legal_notice": "{{brand}} is based on LibreChat Admin Panel, copyright its contributors, modified by Applexus Technologies. AGPL-3.0, no warranty; you may redistribute it under the AGPL.",
+  "com_aura_legal_short": "AGPL-3.0, no warranty.",
   "com_aura_legal_links": "Legal links",
   "com_aura_legal_license": "License",
   "com_aura_legal_source": "Source",
   "com_aura_legal_notices": "Notices",
   "com_aura_about_title": "About and license",
+  "com_aura_new_tab_hint": "opens in a new tab",
   "com_aura_about_desc": "{{brand}} is based on LibreChat Admin Panel, copyright its contributors, modified by Applexus Technologies, and licensed under AGPL-3.0 without warranty. The source code of the running version is available.",
   "com_aura_tools_open_tab": "Open in new tab",
-  "com_aura_tools_new_tab_hint": "opens in a new tab",
   "com_aura_tools_not_found_title": "Tool not found",
   "com_aura_tools_not_found_desc": "This admin tool is not configured, or it cannot be embedded here."
 }
