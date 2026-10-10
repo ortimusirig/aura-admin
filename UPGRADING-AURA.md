@@ -27,8 +27,9 @@ Branches and remotes used below:
     `grep -E '^\s+"(librechat-data-provider|@librechat/data-schemas)": \[' bun.lock`
     (the version follows the `@` in the first array element; `package.json` holds the ranges).
   - If they differ, look for an upstream panel commit or release that bumps them to the server's
-    versions and upgrade to it. If upstream has not bumped them yet, wait before upgrading the
-    LibreChat server, or ask upstream.
+    versions and sync to it (section 3; "Syncing to an earlier upstream commit" shows how to stop
+    at a commit before the tip of upstream `main`). If upstream has not bumped them yet, wait
+    before upgrading the LibreChat server, or ask upstream.
 - **On upstream security or data-loss fixes.** Upstream marks these in commit titles and
   release notes (for example "fix: ... Data Loss", security advisories under the repository's
   Security tab). Upgrade promptly.
@@ -53,16 +54,25 @@ git fetch upstream --tags
 git fetch upstream
 git fetch origin
 
-# 1. Mirror upstream on main (fast-forward only: main has no fork commits)
+# 0. The upstream base the published aura is on now (NOTICE names the same commit). Section 4
+#    compares against it; the same command gives the same answer until aura is pushed.
+OLD=$(git merge-base origin/aura upstream/main)
+
+# 1. Pick the upstream commit to sync to: normally the tip of upstream/main. Check first that its
+#    package versions match the LibreChat server that will run next to the panel (section 1).
+git show upstream/main:bun.lock | grep -E '^\s+"(librechat-data-provider|@librechat/data-schemas)": \['
+TARGET=upstream/main      # or an earlier commit, see "Syncing to an earlier upstream commit"
+
+# 2. Mirror upstream on main (fast-forward only: main has no fork commits)
 git switch main
-git merge --ff-only upstream/main
+git merge --ff-only "$TARGET"
 git push origin main
 
-# 2. Bring the fork's changes onto the new main
+# 3. Bring the fork's changes onto the new main
 git switch aura
 git merge main            # recommended for the published branch: no force push
 # or, for a linear history (only when every deployed version is tagged, see section 5):
-# git rebase main && git push --force-with-lease origin aura
+# git rebase main         # later pushed with --force-with-lease, after the checks
 ```
 
 Prefer the merge: `aura` is public, and each deployed image links to its source commit. A rebase
@@ -78,13 +88,30 @@ git diff --stat "$BASE"..aura
 git diff --name-status "$BASE"..aura     # D deleted, M modified, A added (ours)
 ```
 
+### Syncing to an earlier upstream commit
+
+If the versions printed in step 1 are newer than the ones the LibreChat server ships, either
+upgrade the LibreChat server together with the panel, or stop `main` at the newest upstream
+commit before the packages moved past the server:
+
+```bash
+git log --oneline "$OLD"..upstream/main -- package.json bun.lock   # commits that change dependencies
+git show <commit>:bun.lock | grep -E '^\s+"(librechat-data-provider|@librechat/data-schemas)": \['
+TARGET=<first commit that moves them past the server>^       # its parent
+```
+
+Then continue with step 2, which fast-forwards `main` to that commit instead of the tip. `main`
+stays a fast-forward mirror, and the next sync moves it on. Section 5 tags the release with
+`git rev-parse --short=7 main`, so the tag then names that commit.
+
 ### Upstream files this fork edits
 
 Generated from `git diff --name-status bb88594..aura` (upstream base bb88594, 2026-10-10). Keep
-this list current: when a change touches another upstream file, add it here. Every edited source
-file starts with a one-line `Modified by Applexus Technologies, <date>: <what> (AGPL-3.0)` comment
-(README.md as an HTML comment); keep that line when resolving a conflict and update its text if
-the edit changes.
+this list current: when a change touches another upstream file, add it here. Every edited
+upstream file that allows comments (not `manifest.json`, `favicon.ico` or the generated
+`routeTree.gen.ts`) starts with a one-line
+`Modified by Applexus Technologies, <date>: <what> (AGPL-3.0)` comment (README.md as an HTML
+comment); keep that line when resolving a conflict and update its text if the edit changes.
 
 | File | Edit | On conflict |
 | ---- | ---- | ----------- |
@@ -94,7 +121,7 @@ the edit changes.
 | `public/clickhouse-dark.svg`, `public/clickhouse-light.svg`, `public/librechat-logo.svg`, `src/assets/librechat.svg` | Deleted (third-party logos; ClickHouse trademark policy for modified versions). | Keep them deleted. If upstream references them in new code, point that code at `publicUrl('logo.svg')` from `@/aura`. |
 | `public/favicon.ico` | Replaced by a neutral icon. | Keep ours. |
 | `public/manifest.json` | Neutral names ("Admin", "Admin Panel"), corrected favicon sizes, touch icon entry. | Take upstream's other changes, keep the names and icons. |
-| `server.ts` | Brand overlay for `favicon.ico`, `apple-touch-icon.png`, `logo.svg`, `manifest.json` from `AURA_BRAND_DIR` (`resolveStaticFile` in `buildStaticRoutes`); `frame-src` for embedded tools appended to the CSP (`cspFrameSrc`). | Re-apply the two imports, `BRAND_DIR`, `resolveStaticFile`, its call in the static route loop and the `cspFrameSrc` line in `CSP_VALUE`. |
+| `server.ts` | Brand overlay for `favicon.ico`, `apple-touch-icon.png`, `logo.svg`, `manifest.json` from `AURA_BRAND_DIR` (`resolveStaticFile` in `buildStaticRoutes`); `frame-src` for embedded tools appended to the CSP (`cspFrameSrc`). | Re-apply the three imports (type `BunFile`, the brand helpers, `cspFrameSrc`), `BRAND_DIR`, `resolveStaticFile`, its call in the static route loop and the `cspFrameSrc` line in `CSP_VALUE`. |
 | `src/components/Sidebar.tsx` | Logo from `publicUrl('logo.svg')` instead of the bundled LibreChat logo; `<Tools collapsed={collapsed} />` below the nav items; `h-full` instead of `h-screen`. | Keep upstream's nav changes, re-add the three edits. |
 | `src/components/help/HelpPage.tsx` | `<About />` card ("About and license"). | Re-add the import and the card. |
 | `src/locales/i18n.ts` | English overlay `src/aura/en.json` merged over the English translation; `{{brand}}` default variable. | Re-apply both lines. If upstream renamed `com_auth_title`, `com_a11y_admin_panel` or `com_a11y_logo_alt`, rename them in `src/aura/en.json` too. |
@@ -105,6 +132,10 @@ the edit changes.
 | `src/server/index.ts` | `export * from './aura';` | Re-add the line. |
 | `src/server/metrics.test.ts` | Static asset example `/logo.svg` instead of a removed logo. | Re-apply. |
 | `src/types/index.ts` | `export type * from './aura';` | Re-add the line. |
+
+To finish a conflicted merge: `git diff --name-only --diff-filter=U` lists the files still in
+conflict. After resolving each one, run `git add <file>` (for the files the fork deletes,
+`git rm <file>`), then `git merge --continue` (after a rebase: `git rebase --continue`).
 
 ### Files that are ours only
 
@@ -120,9 +151,27 @@ These never conflict; upstream does not have them. Keep them as they are:
 
 ## 4. Checks after the sync
 
-Run all of these before pushing `aura`.
+Run all of these before pushing `aura`. The commands use `OLD` from section 3 (recompute it the
+same way in a new shell) and the new upstream base:
 
-1. **The gate**, the same checks the CI runs (`.github/workflows/aura-ci.yml`):
+```bash
+NEW=$(git rev-parse main)
+```
+
+1. **Package versions still match the server**: repeat the section 1 comparison with the new
+   `bun.lock` and the LibreChat release that will run next to this panel:
+
+   ```bash
+   grep -E '^\s+"(librechat-data-provider|@librechat/data-schemas)": \[' bun.lock
+   ```
+
+   If the panel is ahead of the server, do not release it: upgrade the LibreChat server first, or
+   redo section 3 with an earlier `TARGET` (`git reset --hard origin/aura` on `aura` and
+   `git reset --hard <earlier target>` on `main`; `main` then needs
+   `git push --force-with-lease origin main`, which is harmless because it carries no fork
+   commits).
+
+2. **The gate**, the same checks the CI runs (`.github/workflows/aura-ci.yml`):
 
    ```bash
    bun install --frozen-lockfile
@@ -132,46 +181,76 @@ Run all of these before pushing `aura`.
      node node_modules/vitest/vitest.mjs run     # tests run under Node, as in CI
    ```
 
-   Upstream's new tests must pass as well as the fork's. Then push to a branch and let the AURA CI
-   build the app and the image.
+   Upstream's new tests must pass as well as the fork's.
 
-2. **No third-party logos came back:**
+   The gate does not build the app or the image. The AURA CI's "Build and Image" job does (Vite
+   build, Docker build, smoke test), and it runs only on a push to `aura` or on a pull request
+   into `aura`. So push the merged branch under a sync name and open a pull request into `aura`
+   on the fork:
 
    ```bash
-   git ls-files | grep -Ei 'librechat-logo|clickhouse-(dark|light)|assets/librechat\.svg'
-   grep -rnE 'librechat-logo|clickhouse-(dark|light)|assets/librechat\.svg' src public server.ts
+   SYNC=sync-$(git rev-parse --short=7 main)
+   git push origin "aura:$SYNC"
+   gh pr create --repo ortimusirig/aura-admin --base aura --head "$SYNC" \
+     --title "Sync upstream $(git rev-parse --short=7 main)" --body "Upstream sync, see UPGRADING-AURA.md"
    ```
 
-   Both must print nothing. (Logos inside `node_modules` libraries are not ours to remove.)
+   On the GitHub website, choose `ortimusirig/aura-admin` as the base repository: for a fork,
+   GitHub proposes the upstream repository as the base, and the pull request must not go there.
+   Push `aura` only after every job of that pull request, Build and Image included, is green
+   (`git push origin aura`, or `git push --force-with-lease origin aura` after a rebase; GitHub
+   then marks the pull request merged).
 
-3. **Legal footer**: run the panel and check that the login page, a 404 page (any unknown path)
+3. **No third-party logos came back:**
+
+   ```bash
+   git ls-files | grep -Ei '(librechat|clickhouse)[^/]*\.(svg|png|ico|jpe?g|webp|gif)$'
+   grep -rnE 'librechat-logo|clickhouse-(dark|light)|assets/librechat\.svg' src public server.ts
+   git diff --name-only --diff-filter=A "$OLD" "$NEW" | grep -Ei '\.(svg|png|ico|jpe?g|webp|gif)$'
+   ```
+
+   The first two must print nothing. Open every image the third one lists: a new LibreChat,
+   ClickHouse or other third-party logo, under any name, must be deleted as well (point code that
+   uses it at `publicUrl('logo.svg')` from `@/aura`). Logos inside `node_modules` libraries are
+   not ours to remove.
+
+4. **Legal footer**: run the panel and check that the login page, a 404 page (any unknown path)
    and an app page (for example Help) each show the footer once, and that its Source link points
    to `https://github.com/ortimusirig/aura-admin/tree/<commit>`. The Help page still has the
    "About and license" card.
 
-4. **Tools section**: with an `AURA_ADMIN_LINKS` value that has one entry of each mode
+5. **Tools section**: with an `AURA_ADMIN_LINKS` value that has one entry of each mode
    (`embed`, `tab`, `text`), signed in as an admin: the embed entry opens under `/tools/<id>`
    inside the panel, the tab entry opens a new tab, the text entry shows its note; collapsed and
    expanded sidebar both work.
 
-5. **Tool pass still accepted**: the pass format is versioned. `src/aura/pass.ts` must still say
+6. **Tool pass still accepted**: the pass format is versioned. `src/aura/pass.ts` must still say
    `PASS_VERSION = 1`, and the fixed test vector in `src/aura/pass.test.ts` must pass unchanged.
    With `AURA_TOOLS_PASS_SECRET` set, open a same-origin embedded tool and confirm that it signs
    the admin in without a second sign-in, and that "Reload frame" works. If upstream changed the
    session (for example the `user.email` field the pass subject comes from), fix that before
    releasing.
 
-6. **Branding**: `AURA_BRAND_NAME` shows in the title, login card, sidebar and footer; a file in
-   `AURA_BRAND_DIR` (for example `logo.svg`) is served instead of the bundled one.
+7. **Branding**: `AURA_BRAND_NAME` shows in the title, login card, sidebar and footer; a file in
+   `AURA_BRAND_DIR` (for example `logo.svg`) is served instead of the bundled one. New upstream
+   English strings must not name the product:
 
-7. **Upstream settings**: `ADMIN_SSO_ONLY=true` still hides the email and password form, and
+   ```bash
+   grep -n 'LibreChat Admin' src/locales/en/translation.json
+   git diff "$OLD" "$NEW" -- src/locales/en/translation.json | grep -E '^\+' \
+     | grep -iE 'admin panel|librechat admin'
+   ```
+
+   Every key either command prints that names the product (rather than the LibreChat server)
+   needs an entry in `src/aura/en.json` with `{{brand}}` in place of the name.
+
+8. **Upstream settings**: `ADMIN_SSO_ONLY=true` still hides the email and password form, and
    `API_SERVER_URL` is still used for the server-side LibreChat calls (sign-in works when the
    panel reaches LibreChat on a different address than the browser).
 
-8. **No new upstream settings to set**: compare the old and the new upstream base.
+9. **No new upstream settings to set**: compare the old and the new upstream base.
 
    ```bash
-   OLD=<previous upstream base>; NEW=$(git rev-parse main)
    git diff "$OLD" "$NEW" -- README.md .env.example
    git diff "$OLD" "$NEW" -- server.ts src | grep -E '^\+' \
      | grep -oE '(process\.env|import\.meta\.env|env)\.[A-Z0-9_]+' | sort -u
@@ -184,7 +263,9 @@ Run all of these before pushing `aura`.
 
 1. **NOTICE**: update "Based on upstream commit ..." to the new upstream base and add a dated
    entry to the change list for any change to the fork itself. Copy it to the served file:
-   `cp NOTICE public/NOTICE.txt` (a test checks they are identical). Commit and push `aura`.
+   `cp NOTICE public/NOTICE.txt` (a test checks they are identical). Commit it on `aura`, best
+   before opening the sync pull request of section 4 so that its checks cover it, and push `aura`
+   once they are green.
 2. **Tag** the release commit and push the tag:
 
    ```bash
@@ -195,13 +276,21 @@ Run all of these before pushing `aura`.
 
    Tags are never deleted or moved: each deployed version's source must stay available (AGPL-3.0
    section 13; the footer's Source link points at the commit).
-3. **Build** the image from the tag, in a clean checkout, with the full commit:
+3. **Build** the image from a fresh clone of the pushed tag, with the full commit:
 
    ```bash
-   git switch --detach "aura-$UP-1"
+   git clone --depth 1 --branch "aura-$UP-1" https://github.com/ortimusirig/aura-admin.git "aura-admin-$UP-1"
+   cd "aura-admin-$UP-1"
    docker build --build-arg AURA_COMMIT=$(git rev-parse HEAD) -t <registry>/aura-admin:"aura-$UP-1" .
    docker push <registry>/aura-admin:"aura-$UP-1"
    ```
+
+   The fresh clone holds exactly the tagged files and proves the tag is public. A working copy
+   would put any uncommitted or untracked file into the image (`COPY . .`), so the running code
+   would differ from the commit its Source link names. If the deployment serves the panel under a
+   sub-path, add the same `--build-arg VITE_BASE_PATH=<path>` as the previous build: the
+   Dockerfile bakes it into the client at build time, and it must match the deployment's runtime
+   `VITE_BASE_PATH`.
 
 4. **Deploy by digest**, not by tag, so the running image is exactly the one that was checked:
    read the digest with
