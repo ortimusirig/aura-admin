@@ -74,6 +74,16 @@ export interface EmbedProps {
   id: string;
 }
 
+export interface EmbedFrameProps {
+  link: AdminUrlLink;
+}
+
+/** The iframe src answered for one load of an embedded tool (loads count up on Reload frame). */
+export interface FrameSrc {
+  load: number;
+  src: string;
+}
+
 /** Claims of an AURA tool pass, version 1, in the key order of the pass contract. */
 export interface ToolPassClaims {
   v: 1;

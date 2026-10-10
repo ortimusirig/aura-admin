@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   RouterProvider,
@@ -33,6 +33,7 @@ interface StubProps {
 const server = vi.hoisted(() => ({
   getAuraSettingsFn: vi.fn(),
   getAdminLinksFn: vi.fn(),
+  getToolFrameSrcFn: vi.fn(),
   getEffectiveCapabilitiesFn: vi.fn(),
   adminLogoutFn: vi.fn(),
   adminLoginFn: vi.fn(),
@@ -95,6 +96,17 @@ const LINKS: t.AdminLink[] = [
   { id: 'status', label: 'Status', href: 'https://status.example.com/', mode: 'tab', icon: 'activity' },
   { id: 'rota', label: 'On call', mode: 'text', icon: 'users', note: 'See the team rota' },
 ];
+const CONSOLE_LINK: t.AdminLink = {
+  id: 'console',
+  label: 'Console',
+  href: '/console/#usage',
+  mode: 'embed',
+  icon: 'console',
+};
+const PASS_SRC_1 = '/console/?aura_pass=first.pass#usage';
+const PASS_SRC_2 = '/console/?aura_pass=second.pass#usage';
+const SANDBOX =
+  'allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-modals allow-top-navigation-by-user-activation';
 
 function stubMatchMedia() {
   Object.defineProperty(window, 'matchMedia', {
@@ -182,6 +194,11 @@ beforeEach(() => {
   localStorage.clear();
   server.getAuraSettingsFn.mockResolvedValue({ brand: 'Acme Console', linksTitle: 'Operations' });
   server.getAdminLinksFn.mockResolvedValue(LINKS);
+  server.getToolFrameSrcFn.mockReset();
+  server.getToolFrameSrcFn.mockImplementation(async ({ data }: { data: { id: string } }) => {
+    const link = LINKS.find((entry) => entry.id === data.id);
+    return link?.mode === 'embed' ? link.href : null;
+  });
   server.getEffectiveCapabilitiesFn.mockResolvedValue({
     capabilities: [SystemCapabilities.ACCESS_ADMIN],
   });
@@ -382,8 +399,11 @@ describe('sidebar tools section', () => {
 });
 
 describe('embedded tool page', () => {
-  it('opens an embed entry inside the panel', async () => {
+  beforeEach(() => {
     localStorage.setItem(SIDEBAR_KEY, 'false');
+  });
+
+  it('opens an embed entry inside the panel', async () => {
     const router = renderAt('/help');
 
     fireEvent.click(await screen.findByRole('link', { name: 'Metrics' }));
@@ -393,10 +413,8 @@ describe('embedded tool page', () => {
     expect(frame.tagName).toBe('IFRAME');
     expect(frame).toHaveAttribute('src', 'https://metrics.example.com/d/1');
     expect(frame).toHaveAttribute('referrerpolicy', 'no-referrer');
-    expect(frame).toHaveAttribute(
-      'sandbox',
-      'allow-scripts allow-same-origin allow-forms allow-popups allow-downloads',
-    );
+    expect(frame).toHaveAttribute('sandbox', SANDBOX);
+    expect(server.getToolFrameSrcFn).toHaveBeenCalledWith({ data: { id: 'metrics' } });
     const open = screen.getByRole('link', { name: 'Open in new tab' });
     expect(open).toHaveAttribute('href', 'https://metrics.example.com/d/1');
     expect(open).toHaveAttribute('target', '_blank');
@@ -409,6 +427,68 @@ describe('embedded tool page', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Tool not found' })).toBeInTheDocument();
     expect(document.querySelector('iframe')).toBeNull();
+    expect(server.getToolFrameSrcFn).not.toHaveBeenCalled();
+  });
+
+  it('loads the src the server answers, so a same-origin tool gets its pass', async () => {
+    server.getAdminLinksFn.mockResolvedValue([...LINKS, CONSOLE_LINK]);
+    server.getToolFrameSrcFn.mockResolvedValue(PASS_SRC_1);
+    renderAt('/tools/console');
+
+    const frame = await screen.findByTitle('Console');
+    expect(frame).toHaveAttribute('src', PASS_SRC_1);
+    expect(frame).toHaveAttribute('sandbox', SANDBOX);
+    expect(server.getToolFrameSrcFn).toHaveBeenCalledWith({ data: { id: 'console' } });
+    expect(screen.getByRole('link', { name: 'Open in new tab' })).toHaveAttribute('href', '/console/#usage');
+  });
+
+  it('shows the loading state until the src arrives', async () => {
+    server.getAdminLinksFn.mockResolvedValue([...LINKS, CONSOLE_LINK]);
+    let answer: (src: string) => void = () => undefined;
+    server.getToolFrameSrcFn.mockReturnValue(new Promise<string>((resolve) => (answer = resolve)));
+    renderAt('/tools/console');
+
+    expect(await screen.findByRole('button', { name: 'Reload frame' })).toBeInTheDocument();
+    expect(screen.getAllByText('Loading...')).not.toHaveLength(0);
+    expect(document.querySelector('iframe')).toBeNull();
+
+    answer(PASS_SRC_1);
+    expect(await screen.findByTitle('Console')).toHaveAttribute('src', PASS_SRC_1);
+  });
+
+  it('asks for a fresh src, with a fresh pass, on Reload frame', async () => {
+    server.getAdminLinksFn.mockResolvedValue([...LINKS, CONSOLE_LINK]);
+    server.getToolFrameSrcFn.mockResolvedValueOnce(PASS_SRC_1).mockResolvedValueOnce(PASS_SRC_2);
+    renderAt('/tools/console');
+
+    const first = await screen.findByTitle('Console');
+    expect(first).toHaveAttribute('src', PASS_SRC_1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reload frame' }));
+
+    await waitFor(() => expect(screen.getByTitle('Console')).toHaveAttribute('src', PASS_SRC_2));
+    expect(server.getToolFrameSrcFn).toHaveBeenCalledTimes(2);
+    expect(first).not.toBeInTheDocument();
+  });
+
+  it('reloads the frame on Reload frame even when the src is the same', async () => {
+    renderAt('/tools/metrics');
+
+    const first = await screen.findByTitle('Metrics');
+    fireEvent.click(screen.getByRole('button', { name: 'Reload frame' }));
+
+    await waitFor(() => expect(server.getToolFrameSrcFn).toHaveBeenCalledTimes(2));
+    const second = await screen.findByTitle('Metrics');
+    expect(second).not.toBe(first);
+    expect(second).toHaveAttribute('src', 'https://metrics.example.com/d/1');
+  });
+
+  it('falls back to the plain href when the src request fails', async () => {
+    server.getAdminLinksFn.mockResolvedValue([...LINKS, CONSOLE_LINK]);
+    server.getToolFrameSrcFn.mockRejectedValue(new Error('offline'));
+    renderAt('/tools/console');
+
+    expect(await screen.findByTitle('Console')).toHaveAttribute('src', '/console/#usage');
   });
 
   it('does not embed tab or text entries', async () => {

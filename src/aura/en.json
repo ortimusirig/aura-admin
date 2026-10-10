@@ -12,6 +12,7 @@
   "com_aura_new_tab_hint": "opens in a new tab",
   "com_aura_about_desc": "{{brand}} is based on LibreChat Admin Panel, copyright its contributors, modified by Applexus Technologies, and licensed under AGPL-3.0 without warranty. The source code of the running version is available.",
   "com_aura_tools_open_tab": "Open in new tab",
+  "com_aura_tools_reload": "Reload frame",
   "com_aura_tools_not_found_title": "Tool not found",
   "com_aura_tools_not_found_desc": "This admin tool is not configured, or it cannot be embedded here."
 }
