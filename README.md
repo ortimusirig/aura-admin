@@ -1,3 +1,9 @@
+<!-- Modified by Applexus Technologies, 2026-10-10: AURA fork section (AGPL-3.0) -->
+## AURA fork
+
+This repository is AURA Admin, a modified LibreChat Admin Panel (AGPL-3.0) whose branding, admin tool links and embedded-tool passes are runtime settings.
+See [NOTICE](NOTICE) for the license terms and the dated list of changes, [AURA.md](AURA.md) for the added settings, and [UPGRADING-AURA.md](UPGRADING-AURA.md) for pulling in new upstream releases.
+
 # LibreChat Admin Panel
 
 A browser-based management interface for [LibreChat](https://github.com/danny-avila/LibreChat). It connects to the same database as the main application and provides a GUI for tasks that would otherwise require editing `librechat.yaml` directly.

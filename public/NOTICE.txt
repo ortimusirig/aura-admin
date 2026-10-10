@@ -51,6 +51,8 @@ Based on upstream commit bb88594.
   - Embedded tools may show confirm and prompt dialogs and leave the frame
     for the top window on a user click; a "Reload frame" control loads the
     frame again with a fresh pass.
+  - Upgrade guide for new upstream releases in UPGRADING-AURA.md and a
+    short fork section at the top of README.md.
 
 
 Additional terms (AGPL-3.0 section 7(e))
